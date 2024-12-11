@@ -92,3 +92,43 @@ jobs:
         env:
           TEST_PHP_ARGS: '-q --show-diff'
         run: make test
+  Windows:
+    defaults:
+      run:
+        shell: cmd
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        php: ['8.4']
+        arch: ['x64']
+        ts: ['ts']
+    steps:
+      - name: Checkout xpass
+        uses: actions/checkout@v4
+      - name: Setup PHP
+        id: setup-php
+        uses: php/setup-php-sdk@v0.10
+        with:
+          version: ${{matrix.php}}
+          arch: ${{matrix.arch}}
+          ts: ${{matrix.ts}}
+          cache: true
+      - name: Fetch libxcrypt
+        run: |
+          curl -Lso libxcrypt.zip https://github.com/cmb69/winlib-builder/actions/runs/12281525937/artifacts/2307215134
+          7z x -odeps libxcrypt.zip
+      - name: Enable Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{matrix.arch}}
+          toolset: ${{steps.setup-php.outputs.toolset}}
+      - name: phpize
+        run: phpize
+      - name: configure
+        run: configure --enable-xpass --with-prefix=${{steps.setup-php.outputs.prefix}}
+      - name: make
+        run: nmake
+      - name: test
+        env:
+          TEST_PHP_ARGS: '-q --show-diff'
+        run: nmake test
